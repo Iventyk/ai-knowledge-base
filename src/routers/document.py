@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile
+from fastapi import APIRouter, UploadFile, Depends
 from sqlalchemy.orm import Session
 
 from src.services.document import DocumentService
