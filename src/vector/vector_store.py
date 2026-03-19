@@ -7,5 +7,5 @@ from src.core.config import settings
 def get_vector_store():
     return PGVector(
         connection_string=settings.database_url,
-        embedding_function=OpenAIEmbeddings()
+        embedding_function=OpenAIEmbeddings(),
     )

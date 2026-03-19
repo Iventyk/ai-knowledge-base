@@ -1,6 +1,7 @@
 import logging
 import sys
 
+
 def setup_logging():
     """
     Setup global logging configuration for the project.
@@ -10,7 +11,5 @@ def setup_logging():
     logging.basicConfig(
         level=logging.INFO,
         format=log_format,
-        handlers=[
-            logging.StreamHandler(sys.stdout)
-        ]
+        handlers=[logging.StreamHandler(sys.stdout)],
     )

@@ -1,21 +1,23 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from src.db.models.document import Document
 
 
 class DocumentRepository:
-    def __init__(self, session: Session):
+    def __init__(self, session: AsyncSession):
         self.session = session
 
-    def create(self, name: str) -> Document:
+    async def create(self, name: str) -> Document:
         document = Document(name=name)
         self.session.add(document)
-        self.session.commit()
-        self.session.refresh(document)
+        await self.session.commit()
+        await self.session.refresh(document)
         return document
 
-    def get_all(self):
-        return self.session.query(Document).all()
+    async def get_all(self) -> list[Document]:
+        result = await self.session.execute(select(Document))
+        return list(result.scalars().all())
 
-    def delete(self, document: Document):
-        self.session.delete(document)
-        self.session.commit()
+    async def delete(self, document: Document):
+        await self.session.delete(document)
+        await self.session.commit()
