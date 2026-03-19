@@ -5,10 +5,10 @@ from src.services.document import DocumentService
 from src.repositories.document import DocumentRepository
 from src.db.session import get_db
 
-router = APIRouter()
+documents_router = APIRouter(tags=["documents"])
 
 
-@router.post("/documents")
+@documents_router.post("/documents")
 def upload_document(file: UploadFile, db: Session = Depends(get_db)):
     service = DocumentService(DocumentRepository(db))
 
