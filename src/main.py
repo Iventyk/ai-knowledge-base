@@ -12,13 +12,19 @@ setup_logging()
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    print("Starting up...")
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    print("DB initialized!")
+async def lifespan(app: FastAPI):
+    import asyncio
+
+    for attempt in range(5):
+        try:
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            print("DB connected ✅")
+            break
+        except Exception:
+            print(f"DB not ready... retry {attempt + 1}/5")
+            await asyncio.sleep(2)
     yield
-    print("Shutting down...")
 
 
 app = FastAPI(
