@@ -1,3 +1,5 @@
+from pydantic import SecretStr
+
 from langchain_core.embeddings import Embeddings
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage
@@ -19,12 +21,14 @@ class EchoChatModel(BaseChatModel):
             for message in messages
             if hasattr(message, "content")
         ]
+
         response = "\n".join(
             [
                 "Demo answer generated without external LLM.",
                 *human_messages[-1:],
             ]
         )
+
         return ChatResult(
             generations=[ChatGeneration(message=AIMessage(content=response))]
         )
@@ -32,13 +36,17 @@ class EchoChatModel(BaseChatModel):
 
 def get_embeddings() -> Embeddings:
     if settings.embedding_provider == "openai" and settings.openai_api_key:
-        return OpenAIEmbeddings(api_key=settings.openai_api_key)
+        return OpenAIEmbeddings(
+            api_key=SecretStr(settings.openai_api_key)
+        )
     return FakeEmbeddings(size=1536)
 
 
 def get_llm() -> BaseChatModel:
     if settings.llm_provider == "openai" and settings.openai_api_key:
         return ChatOpenAI(
-            model="gpt-4o-mini", api_key=settings.openai_api_key, temperature=0
+            model="gpt-4o-mini",
+            api_key=SecretStr(settings.openai_api_key),
+            temperature=0,
         )
     return EchoChatModel()

@@ -1,14 +1,21 @@
 import logging
 import sys
+from typing import Any, Callable, MutableMapping, Mapping
 
 import structlog
 
 from src.core.config import settings
 
+Processor = Callable[
+    [Any, str, MutableMapping[str, Any]],
+    Mapping[str, Any] | str | bytes | bytearray | tuple[Any, ...],
+]
+
 
 def setup_logging() -> None:
     timestamper = structlog.processors.TimeStamper(fmt="iso")
-    shared_processors = [
+
+    shared_processors: list[Processor] = [
         structlog.stdlib.add_log_level,
         timestamper,
         structlog.processors.StackInfoRenderer(),

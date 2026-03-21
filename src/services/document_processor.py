@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any
 from uuid import UUID
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -28,6 +29,7 @@ class DocumentProcessorService:
 
         try:
             chunks = await self._load_and_split(document.file_path)
+
             vectors = self.embedding_model.embed_documents(
                 [chunk.page_content for chunk in chunks]
             )
@@ -73,6 +75,7 @@ class DocumentProcessorService:
     async def _load_and_split(self, file_path: str):
         suffix = Path(file_path).suffix.lower()
 
+        loader: Any
         if suffix == ".pdf":
             loader = PyPDFLoader(file_path)
         else:
