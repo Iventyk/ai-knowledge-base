@@ -36,9 +36,7 @@ class EchoChatModel(BaseChatModel):
 
 def get_embeddings() -> Embeddings:
     if settings.embedding_provider == "openai" and settings.openai_api_key:
-        return OpenAIEmbeddings(
-            api_key=SecretStr(settings.openai_api_key)
-        )
+        return OpenAIEmbeddings(api_key=SecretStr(settings.openai_api_key))
     return FakeEmbeddings(size=1536)
 
 
