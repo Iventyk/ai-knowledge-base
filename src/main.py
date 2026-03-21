@@ -1,36 +1,25 @@
+from contextlib import asynccontextmanager
+
+import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
-from src.routers import ask_router, documents_router
 from src.core.logging import setup_logging
-from src.db.session import engine
-from src.db.base import Base
+from src.db.init_db import init_db
+from src.routers import ask_router, documents_router
 
 setup_logging()
+logger = structlog.get_logger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
-    import asyncio
-
-    for attempt in range(5):
-        try:
-            async with engine.begin() as conn:
-                await conn.run_sync(Base.metadata.create_all)
-            print("DB connected ✅")
-            break
-        except Exception:
-            print(f"DB not ready... retry {attempt + 1}/5")
-            await asyncio.sleep(2)
+async def lifespan(_: FastAPI):
+    await init_db()
+    logger.info("server_started")
     yield
 
 
-app = FastAPI(
-    title="AI Knowledge Base API", version="1.0.0", lifespan=lifespan
-)
-
+app = FastAPI(title="AI Knowledge Base API", version="1.0.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -39,5 +28,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(ask_router)
 app.include_router(documents_router)
+app.include_router(ask_router)
