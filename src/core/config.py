@@ -1,36 +1,61 @@
-import os
+from functools import lru_cache
+from pathlib import Path
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    POSTGRES_DB: str = os.getenv("POSTGRES_DB", "my_db")
-    POSTGRES_USER: str = os.getenv("POSTGRES_USER", "user")
-    POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "password")
-    POSTGRES_HOST: str = os.getenv("POSTGRES_HOST", "localhost")
-    POSTGRES_PORT: int = int(os.getenv("POSTGRES_PORT", 5432))
+    postgres_db: str = Field(default="ai_knowledge_base", alias="POSTGRES_DB")
+    postgres_user: str = Field(default="postgres", alias="POSTGRES_USER")
+    postgres_password: str = Field(default="postgres", alias="POSTGRES_PASSWORD")
+    postgres_host: str = Field(default="localhost", alias="POSTGRES_HOST")
+    postgres_port: int = Field(default=5432, alias="POSTGRES_PORT")
 
-    APP_PORT: int = int(os.getenv("APP_PORT", 8000))
+    app_host: str = Field(default="0.0.0.0", alias="APP_HOST")
+    app_port: int = Field(default=8000, alias="APP_PORT")
 
-    REDIS_HOST: str = os.getenv("REDIS_HOST", "localhost")
-    REDIS_PORT: int = int(os.getenv("REDIS_PORT", 6379))
-    REDIS_DB: int = int(os.getenv("REDIS_DB", 0))
+    redis_host: str = Field(default="localhost", alias="REDIS_HOST")
+    redis_port: int = Field(default=6379, alias="REDIS_PORT")
+    redis_db: int = Field(default=0, alias="REDIS_DB")
 
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
+    embedding_provider: str = Field(default="fake", alias="EMBEDDING_PROVIDER")
+    llm_provider: str = Field(default="fake", alias="LLM_PROVIDER")
+    vector_collection: str = Field(default="documents", alias="VECTOR_COLLECTION")
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    upload_dir: Path = Field(default=Path("storage/documents"), alias="UPLOAD_DIR")
+    chunk_size: int = Field(default=1000, alias="CHUNK_SIZE")
+    chunk_overlap: int = Field(default=200, alias="CHUNK_OVERLAP")
+    top_k: int = Field(default=4, alias="TOP_K")
+    log_level: str = Field(default="INFO", alias="LOG_LEVEL")
+
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore", populate_by_name=True)
 
     @property
     def database_url(self) -> str:
         return (
-            f"postgresql+asyncpg://{self.POSTGRES_USER}:"
-            f"{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:"
-            f"{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+            f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}"
+            f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+        )
+
+    @property
+    def sync_database_url(self) -> str:
+        return (
+            f"postgresql+psycopg://{self.postgres_user}:{self.postgres_password}"
+            f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
         )
 
     @property
     def redis_url(self) -> str:
-        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+        return f"redis://{self.redis_host}:{self.redis_port}/{self.redis_db}"
 
 
-settings = Settings()
+@lru_cache(maxsize=1)
+def get_settings() -> Settings:
+    settings = Settings()
+    settings.upload_dir.mkdir(parents=True, exist_ok=True)
+    return settings
+
+
+settings = get_settings()
