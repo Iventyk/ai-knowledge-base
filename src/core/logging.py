@@ -22,8 +22,7 @@ def setup_logging() -> None:
     )
 
     structlog.configure(
-        processors=shared_processors
-        + [structlog.processors.JSONRenderer()],
+        processors=shared_processors + [structlog.processors.JSONRenderer()],
         wrapper_class=structlog.stdlib.BoundLogger,
         logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,

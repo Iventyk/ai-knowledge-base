@@ -8,7 +8,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     postgres_db: str = Field(default="ai_knowledge_base", alias="POSTGRES_DB")
     postgres_user: str = Field(default="postgres", alias="POSTGRES_USER")
-    postgres_password: str = Field(default="postgres", alias="POSTGRES_PASSWORD")
+    postgres_password: str = Field(
+        default="postgres", alias="POSTGRES_PASSWORD"
+    )
     postgres_host: str = Field(default="localhost", alias="POSTGRES_HOST")
     postgres_port: int = Field(default=5432, alias="POSTGRES_PORT")
 
@@ -22,27 +24,33 @@ class Settings(BaseSettings):
     openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
     embedding_provider: str = Field(default="fake", alias="EMBEDDING_PROVIDER")
     llm_provider: str = Field(default="fake", alias="LLM_PROVIDER")
-    vector_collection: str = Field(default="documents", alias="VECTOR_COLLECTION")
+    vector_collection: str = Field(
+        default="documents", alias="VECTOR_COLLECTION"
+    )
 
-    upload_dir: Path = Field(default=Path("storage/documents"), alias="UPLOAD_DIR")
+    upload_dir: Path = Field(
+        default=Path("storage/documents"), alias="UPLOAD_DIR"
+    )
     chunk_size: int = Field(default=1000, alias="CHUNK_SIZE")
     chunk_overlap: int = Field(default=200, alias="CHUNK_OVERLAP")
     top_k: int = Field(default=4, alias="TOP_K")
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore", populate_by_name=True)
+    model_config = SettingsConfigDict(
+        env_file=".env", extra="ignore", populate_by_name=True
+    )
 
     @property
     def database_url(self) -> str:
         return (
-            f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}"
+            f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}"  # noqa
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
         )
 
     @property
     def sync_database_url(self) -> str:
         return (
-            f"postgresql+psycopg://{self.postgres_user}:{self.postgres_password}"
+            f"postgresql+psycopg://{self.postgres_user}:{self.postgres_password}"  # noqa
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
         )
 

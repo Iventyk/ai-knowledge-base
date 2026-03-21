@@ -20,8 +20,8 @@ class QuestionAnswerService:
         self.embedding_model = get_embeddings()
         self.llm = get_llm()
         self.prompt = ChatPromptTemplate.from_template(
-            "You are an assistant answering questions about uploaded documents. "
-            "Use only the provided context. If the answer is missing, say so.\n\n"
+            "You are an assistant answering questions about uploaded documents. "  # noqa
+            "Use only the provided context. If the answer is missing, say so.\n\n"  # noqa
             "Question: {question}\n\nContext:\n{context}"
         )
 
@@ -33,7 +33,11 @@ class QuestionAnswerService:
         if not documents:
             raise ValueError("No documents were found for the provided ids")
 
-        processed_ids = [document.id for document in documents if document.status == DocumentStatus.PROCESSED.value]
+        processed_ids = [
+            document.id
+            for document in documents
+            if document.status == DocumentStatus.PROCESSED.value
+        ]
         if not processed_ids:
             raise ValueError("Selected documents are not processed yet")
 
@@ -46,22 +50,37 @@ class QuestionAnswerService:
         context_documents = [
             LCDocument(
                 page_content=chunk.content,
-                metadata={"document": chunk.source_document, "chunk_id": chunk.chunk_id},
+                metadata={
+                    "document": chunk.source_document,
+                    "chunk_id": chunk.chunk_id,
+                },
             )
             for chunk in chunks
         ]
         context = "\n\n".join(
-            f"[{doc.metadata['document']}#{doc.metadata['chunk_id']}] {doc.page_content}"
+            f"[{doc.metadata['document']}#{doc.metadata['chunk_id']}] {doc.page_content}"  # noqa
             for doc in context_documents
         )
-        message = self.prompt.invoke({"question": payload.question, "context": context})
-        answer = self.llm.invoke(message).content
-        logger.info("ai_question_answered", question=payload.question, chunks=len(chunks))
+        message = self.prompt.invoke(
+            {"question": payload.question, "context": context}
+        )
+        raw_answer = self.llm.invoke(message).content
+
+        if isinstance(raw_answer, list):
+            answer = "".join(str(item) for item in raw_answer)
+        else:
+            answer = str(raw_answer)
+        logger.info(
+            "ai_question_answered",
+            question=payload.question,
+            chunks=len(chunks),
+        )
         return AskResponse(
             answer=answer,
             sources=[
-                AskSource(document=chunk.source_document, chunk_id=chunk.chunk_id)
+                AskSource(
+                    document=chunk.source_document, chunk_id=chunk.chunk_id
+                )
                 for chunk in chunks
             ],
         )
-    

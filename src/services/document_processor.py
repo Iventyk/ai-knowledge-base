@@ -28,7 +28,10 @@ class DocumentProcessorService:
 
         try:
             chunks = await self._load_and_split(document.file_path)
-            vectors = self.embedding_model.embed_documents([chunk.page_content for chunk in chunks])
+            vectors = self.embedding_model.embed_documents(
+                [chunk.page_content for chunk in chunks]
+            )
+
             rows = [
                 ChunkEmbedding(
                     document_id=document.id,
@@ -37,14 +40,20 @@ class DocumentProcessorService:
                     embedding=vector,
                     source_document=document.name,
                 )
-                for index, (chunk, vector) in enumerate(zip(chunks, vectors, strict=False), start=1)
+                for index, (chunk, vector) in enumerate(
+                    zip(chunks, vectors, strict=False), start=1
+                )
             ]
+
             await self.embeddings.bulk_create(rows)
+
             document.chunks_count = len(rows)
             document.status = DocumentStatus.PROCESSED.value
             document.summary = await self._generate_summary(chunks)
             document.error_message = None
+
             await self.session.commit()
+
         except Exception as exc:
             document.status = DocumentStatus.FAILED.value
             document.error_message = str(exc)
@@ -55,6 +64,7 @@ class DocumentProcessorService:
         document = await self.documents.get(document_id)
         if document is None:
             return
+
         if not document.summary:
             chunks = await self._load_and_split(document.file_path)
             document.summary = await self._generate_summary(chunks)
@@ -62,22 +72,34 @@ class DocumentProcessorService:
 
     async def _load_and_split(self, file_path: str):
         suffix = Path(file_path).suffix.lower()
+
         if suffix == ".pdf":
             loader = PyPDFLoader(file_path)
         else:
             loader = TextLoader(file_path, autodetect_encoding=True)
 
         docs = loader.load()
+
         splitter = RecursiveCharacterTextSplitter(
             chunk_size=settings.chunk_size,
             chunk_overlap=settings.chunk_overlap,
         )
+
         return splitter.split_documents(docs)
+
+    def _normalize_llm_output(self, content: str | list) -> str:
+        """Normalize LLM output to string."""
+        if isinstance(content, str):
+            return content
+
+        return " ".join(str(item) for item in content)
 
     async def _generate_summary(self, chunks) -> str:
         context = "\n\n".join(chunk.page_content for chunk in chunks[:3])
+
         response = self.llm.invoke(
-            "Summarize the document briefly for cataloging purposes.\n\n" + context
+            "Summarize the document briefly for cataloging purposes.\n\n"
+            + context
         )
-        return response.content
-    
+
+        return self._normalize_llm_output(response.content)

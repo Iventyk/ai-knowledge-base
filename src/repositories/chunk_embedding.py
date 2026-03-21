@@ -16,10 +16,20 @@ class ChunkEmbeddingRepository:
         await self.session.commit()
 
     async def delete_by_document_id(self, document_id: UUID) -> None:
-        await self.session.execute(delete(ChunkEmbedding).where(ChunkEmbedding.document_id == document_id))
+        await self.session.execute(
+            delete(ChunkEmbedding).where(
+                ChunkEmbedding.document_id == document_id
+            )
+        )
         await self.session.commit()
 
-    async def similarity_search(self, *, embedding: list[float], document_ids: Sequence[UUID], limit: int) -> Sequence[ChunkEmbedding]:
+    async def similarity_search(
+        self,
+        *,
+        embedding: list[float],
+        document_ids: Sequence[UUID],
+        limit: int,
+    ) -> Sequence[ChunkEmbedding]:
         statement = (
             select(ChunkEmbedding)
             .where(ChunkEmbedding.document_id.in_(document_ids))

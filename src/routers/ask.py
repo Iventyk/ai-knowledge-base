@@ -1,8 +1,8 @@
 from fastapi import APIRouter
 
-ask_router = APIRouter(tags=["ask"])
+router = APIRouter(tags=["ask"])
 
 
-@ask_router.post("/ask")
+@router.post("/ask")
 def ask_question():
     return {"answer": "stub"}

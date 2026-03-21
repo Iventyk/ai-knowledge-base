@@ -15,12 +15,19 @@ class EchoChatModel(BaseChatModel):
 
     def _generate(self, messages, stop=None, run_manager=None, **kwargs):
         human_messages = [
-            message.content for message in messages if hasattr(message, "content")
+            message.content
+            for message in messages
+            if hasattr(message, "content")
         ]
         response = "\n".join(
-            ["Demo answer generated without external LLM.", *human_messages[-1:]]
+            [
+                "Demo answer generated without external LLM.",
+                *human_messages[-1:],
+            ]
         )
-        return ChatResult(generations=[ChatGeneration(message=AIMessage(content=response))])
+        return ChatResult(
+            generations=[ChatGeneration(message=AIMessage(content=response))]
+        )
 
 
 def get_embeddings() -> Embeddings:
@@ -31,5 +38,7 @@ def get_embeddings() -> Embeddings:
 
 def get_llm() -> BaseChatModel:
     if settings.llm_provider == "openai" and settings.openai_api_key:
-        return ChatOpenAI(model="gpt-4o-mini", api_key=settings.openai_api_key, temperature=0)
+        return ChatOpenAI(
+            model="gpt-4o-mini", api_key=settings.openai_api_key, temperature=0
+        )
     return EchoChatModel()
