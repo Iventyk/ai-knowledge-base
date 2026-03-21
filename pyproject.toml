@@ -11,11 +11,16 @@ exclude = '''
 '''
 
 [tool.mypy]
-python_version = "3.13"
-ignore_missing_imports = true
-warn_unused_ignores = true
-warn_return_any = false
-no_implicit_optional = true
+python_version = 3.13
+ignore_missing_imports = true       # Ignore missing imports (e.g., third-party libraries)
+disallow_untyped_calls = false      # Allow calls to functions without type hints
+disallow_untyped_defs = false       # Allow functions without type hints
+disallow_incomplete_defs = false    # Allow incomplete type definitions
+check_untyped_defs = false          # Do not check functions without type hints
+warn_unused_ignores = true          # Warn if ignore comments are unused
+warn_return_any = false              # Ignore functions returning Any
+no_implicit_optional = true          # Do not automatically make types Optional
+strict_equality = false              # Do not require strict type checks for == and !=
 exclude = '''
 /(
   | migrations
