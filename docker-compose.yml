@@ -1,67 +1,55 @@
-version: "3.9"
-
 services:
   db:
-    image: postgres:16
-    container_name: ai_postgres
-    restart: always
-    env_file:
-      - .env
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    env_file: .env
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
-      retries: 5
-      timeout: 3s
+      timeout: 5s
+      retries: 10
 
   redis:
-    image: redis:7
-    container_name: redis_ai
+    image: redis:7-alpine
+    restart: unless-stopped
     ports:
       - "6379:6379"
-
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
-      retries: 5
+      timeout: 3s
+      retries: 10
 
-  app:
+  api:
     build: .
-    container_name: ai_app
-    restart: always
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
-    env_file:
-      - .env
+    env_file: .env
     ports:
       - "8000:8000"
     volumes:
       - .:/app
-    environment:
-      - PYTHONPATH=/app
 
   celery:
     build: .
-    container_name: celery_ai
-    env_file:
-      - .env
+    restart: unless-stopped
+    command: celery -A src.tasks.celery.celery_app worker --loglevel=info
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: celery -A src.tasks.celery.celery_app worker --loglevel=info
+    env_file: .env
     volumes:
       - .:/app
-    environment:
-      - PYTHONPATH=/app
 
 volumes:
   postgres_data:
