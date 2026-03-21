@@ -2,7 +2,6 @@ import asyncio
 from uuid import UUID
 
 import structlog
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.session import AsyncSessionLocal
 from src.services.document_processor import DocumentProcessorService

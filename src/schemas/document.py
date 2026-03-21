@@ -1,11 +1,11 @@
 from datetime import datetime
-from enum import StrEnum
+from enum import Enum
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
-class DocumentStatus(StrEnum):
+class DocumentStatus(str, Enum):
     PROCESSING = "processing"
     PROCESSED = "processed"
     FAILED = "failed"
@@ -22,15 +22,9 @@ class DocumentListItem(BaseModel):
     id: UUID
     name: str
     status: DocumentStatus
-    chunks: int
+    chunks: int = Field(alias="chunks_count")
     created_at: datetime
 
-    @classmethod
-    def from_model(cls, document) -> "DocumentListItem":
-        return cls(
-            id=document.id,
-            name=document.name,
-            status=document.status,
-            chunks=document.chunks_count,
-            created_at=document.created_at,
-        )
+
+class DocumentErrorResponse(BaseModel):
+    detail: str

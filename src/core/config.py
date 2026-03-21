@@ -6,6 +6,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    project_name: str = Field(
+        default="AI Knowledge Base API", alias="PROJECT_NAME"
+    )
+    project_version: str = Field(default="1.0.0", alias="PROJECT_VERSION")
+    api_prefix: str = Field(default="", alias="API_PREFIX")
+
     postgres_db: str = Field(default="ai_knowledge_base", alias="POSTGRES_DB")
     postgres_user: str = Field(default="postgres", alias="POSTGRES_USER")
     postgres_password: str = Field(
@@ -24,9 +30,11 @@ class Settings(BaseSettings):
     openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
     embedding_provider: str = Field(default="fake", alias="EMBEDDING_PROVIDER")
     llm_provider: str = Field(default="fake", alias="LLM_PROVIDER")
-    vector_collection: str = Field(
-        default="documents", alias="VECTOR_COLLECTION"
+    embedding_model: str = Field(
+        default="text-embedding-3-small", alias="EMBEDDING_MODEL"
     )
+    llm_model: str = Field(default="gpt-4o-mini", alias="LLM_MODEL")
+    vector_dimensions: int = Field(default=1536, alias="VECTOR_DIMENSIONS")
 
     upload_dir: Path = Field(
         default=Path("storage/documents"), alias="UPLOAD_DIR"
@@ -37,20 +45,25 @@ class Settings(BaseSettings):
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
 
     model_config = SettingsConfigDict(
-        env_file=".env", extra="ignore", populate_by_name=True
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        populate_by_name=True,
     )
 
     @property
     def database_url(self) -> str:
         return (
-            f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}"  # noqa
+            "postgresql+asyncpg://"
+            f"{self.postgres_user}:{self.postgres_password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
         )
 
     @property
     def sync_database_url(self) -> str:
         return (
-            f"postgresql+psycopg://{self.postgres_user}:{self.postgres_password}"  # noqa
+            "postgresql+psycopg://"
+            f"{self.postgres_user}:{self.postgres_password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
         )
 

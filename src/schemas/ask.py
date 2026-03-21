@@ -16,3 +16,7 @@ class AskSource(BaseModel):
 class AskResponse(BaseModel):
     answer: str
     sources: list[AskSource]
+
+
+class AskErrorResponse(BaseModel):
+    detail: str

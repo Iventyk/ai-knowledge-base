@@ -16,7 +16,7 @@ class DocumentRepository:
     ) -> Document:
         document = Document(name=name, file_path=file_path, status=status)
         self.session.add(document)
-        await self.session.commit()
+        await self.session.flush()
         await self.session.refresh(document)
         return document
 
@@ -31,4 +31,3 @@ class DocumentRepository:
 
     async def delete(self, document: Document) -> None:
         await self.session.delete(document)
-        await self.session.commit()

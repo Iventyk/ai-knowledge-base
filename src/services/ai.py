@@ -1,11 +1,12 @@
+from __future__ import annotations
 from pydantic import SecretStr
 
+from langchain_community.embeddings import FakeEmbeddings
 from langchain_core.embeddings import Embeddings
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage
 from langchain_core.outputs import ChatGeneration, ChatResult
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_community.embeddings import FakeEmbeddings
 
 from src.core.config import settings
 
@@ -16,17 +17,11 @@ class EchoChatModel(BaseChatModel):
         return "echo-chat"
 
     def _generate(self, messages, stop=None, run_manager=None, **kwargs):
-        human_messages = [
-            message.content
-            for message in messages
-            if hasattr(message, "content")
-        ]
-
-        response = "\n".join(
-            [
-                "Demo answer generated without external LLM.",
-                *human_messages[-1:],
-            ]
+        prompt = str(messages[-1].content) if messages else ""
+        response = (
+            "Demo answer generated without an external LLM. "
+            "Below is the prompt that would be sent to the model:\n\n"
+            f"{prompt}"
         )
 
         return ChatResult(
@@ -36,14 +31,17 @@ class EchoChatModel(BaseChatModel):
 
 def get_embeddings() -> Embeddings:
     if settings.embedding_provider == "openai" and settings.openai_api_key:
-        return OpenAIEmbeddings(api_key=SecretStr(settings.openai_api_key))
-    return FakeEmbeddings(size=1536)
+        return OpenAIEmbeddings(
+            model=settings.embedding_model,
+            api_key=SecretStr(settings.openai_api_key),
+        )
+    return FakeEmbeddings(size=settings.vector_dimensions)
 
 
 def get_llm() -> BaseChatModel:
     if settings.llm_provider == "openai" and settings.openai_api_key:
         return ChatOpenAI(
-            model="gpt-4o-mini",
+            model=settings.llm_model,
             api_key=SecretStr(settings.openai_api_key),
             temperature=0,
         )

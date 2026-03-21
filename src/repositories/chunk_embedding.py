@@ -13,7 +13,7 @@ class ChunkEmbeddingRepository:
 
     async def bulk_create(self, chunks: Sequence[ChunkEmbedding]) -> None:
         self.session.add_all(list(chunks))
-        await self.session.commit()
+        await self.session.flush()
 
     async def delete_by_document_id(self, document_id: UUID) -> None:
         await self.session.execute(
@@ -21,7 +21,6 @@ class ChunkEmbeddingRepository:
                 ChunkEmbedding.document_id == document_id
             )
         )
-        await self.session.commit()
 
     async def similarity_search(
         self,
