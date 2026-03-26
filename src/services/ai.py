@@ -1,12 +1,13 @@
 from __future__ import annotations
 from pydantic import SecretStr
 
-from langchain_community.embeddings import FakeEmbeddings
+from langchain_community.embeddings import FakeEmbeddings, HuggingFaceEmbeddings
 from langchain_core.embeddings import Embeddings
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage
 from langchain_core.outputs import ChatGeneration, ChatResult
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_groq import ChatGroq
 
 from src.core.config import settings
 
@@ -35,6 +36,8 @@ def get_embeddings() -> Embeddings:
             model=settings.embedding_model,
             api_key=SecretStr(settings.openai_api_key),
         )
+    if settings.embedding_provider == "huggingface":
+        return HuggingFaceEmbeddings(model_name=settings.embedding_model)
     return FakeEmbeddings(size=settings.vector_dimensions)
 
 
@@ -43,6 +46,12 @@ def get_llm() -> BaseChatModel:
         return ChatOpenAI(
             model=settings.llm_model,
             api_key=SecretStr(settings.openai_api_key),
+            temperature=0,
+        )
+    if settings.llm_provider == "groq" and settings.groq_api_key:
+        return ChatGroq(
+            model=settings.llm_model,
+            api_key=SecretStr(settings.groq_api_key),
             temperature=0,
         )
     return EchoChatModel()
