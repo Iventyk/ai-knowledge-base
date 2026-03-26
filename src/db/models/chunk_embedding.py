@@ -7,6 +7,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.db.base import Base
+from src.core.config import settings
 
 
 class ChunkEmbedding(Base):
@@ -24,7 +25,7 @@ class ChunkEmbedding(Base):
     chunk_id: Mapped[int] = mapped_column(Integer, nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     embedding: Mapped[list[float]] = mapped_column(
-        Vector(1536), nullable=False
+        Vector(settings.vector_dimensions), nullable=False
     )
     source_document: Mapped[str] = mapped_column(String(255), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
