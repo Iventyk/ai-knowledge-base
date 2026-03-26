@@ -48,9 +48,18 @@ class QuestionAnswerService:
             if document.status == DocumentStatus.PROCESSED.value
         ]
         if not processed_ids:
+            document_statuses = {
+                str(document.id): document.status for document in documents
+            }
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Selected documents are not processed yet",
+                detail={
+                    "message": (
+                        "Selected documents are not ready for questions yet. "
+                        "Only documents with status 'processed' can be used."
+                    ),
+                    "document_statuses": document_statuses,
+                },
             )
 
         question_embedding = self.embedding_model.embed_query(payload.question)
