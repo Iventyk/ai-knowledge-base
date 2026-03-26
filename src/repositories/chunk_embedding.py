@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.models.chunk_embedding import ChunkEmbedding
@@ -29,9 +29,14 @@ class ChunkEmbeddingRepository:
         document_ids: Sequence[UUID],
         limit: int,
     ) -> Sequence[ChunkEmbedding]:
+        embedding_dimensions = len(embedding)
         statement = (
             select(ChunkEmbedding)
             .where(ChunkEmbedding.document_id.in_(document_ids))
+            .where(
+                func.vector_dims(ChunkEmbedding.embedding)
+                == embedding_dimensions
+            )
             .order_by(ChunkEmbedding.embedding.cosine_distance(embedding))
             .limit(limit)
         )

@@ -44,6 +44,7 @@ class DocumentProcessorService:
             vectors = self.embedding_model.embed_documents(
                 [chunk.page_content for chunk in chunks]
             )
+            self._validate_vector_dimensions(vectors)
 
             rows = [
                 ChunkEmbedding(
@@ -84,6 +85,26 @@ class DocumentProcessorService:
                 error=str(exc),
             )
             raise
+
+    def _validate_vector_dimensions(self, vectors: list[list[float]]) -> None:
+        if not vectors:
+            return
+
+        dimensions = {len(vector) for vector in vectors}
+        if len(dimensions) > 1:
+            raise ValueError(
+                "Embedding model returned mixed vector dimensions for "
+                "chunks in the same document"
+            )
+
+        actual_dimensions = dimensions.pop()
+        if actual_dimensions != settings.vector_dimensions:
+            raise ValueError(
+                "Embedding dimensions mismatch: "
+                f"VECTOR_DIMENSIONS={settings.vector_dimensions}, "
+                f"model_output={actual_dimensions}. "
+                "Update VECTOR_DIMENSIONS and reprocess documents."
+            )
 
     async def generate_summary(self, document_id: UUID) -> None:
         document = await self.documents.get(document_id)

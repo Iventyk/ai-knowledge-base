@@ -63,6 +63,7 @@ class QuestionAnswerService:
             )
 
         question_embedding = self.embedding_model.embed_query(payload.question)
+        question_embedding_dimensions = len(question_embedding)
         chunks = await self.embedding_repository.similarity_search(
             embedding=question_embedding,
             document_ids=processed_ids,
@@ -70,10 +71,12 @@ class QuestionAnswerService:
         )
         if not chunks:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=status.HTTP_409_CONFLICT,
                 detail=(
-                    "No indexed chunks were found for the selected "
-                    "documents"
+                    "No compatible indexed chunks were found for the "
+                    "selected documents. Reprocess the documents after "
+                    "setting VECTOR_DIMENSIONS to match your embedding "
+                    f"model output size ({question_embedding_dimensions})."
                 ),
             )
 
