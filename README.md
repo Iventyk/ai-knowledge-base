@@ -144,6 +144,7 @@ REDIS_PORT=6379
 REDIS_DB=0
 
 OPENAI_API_KEY=
+GROQ_API_KEY=
 EMBEDDING_PROVIDER=fake
 LLM_PROVIDER=fake
 EMBEDDING_MODEL=text-embedding-3-small
@@ -180,6 +181,10 @@ docker compose up --build
   - `OPENAI_API_KEY=...`
   - `EMBEDDING_PROVIDER=openai`
   - `LLM_PROVIDER=openai`
+- To use a free-tier setup without OpenAI billing, you can mix providers:
+  - `LLM_PROVIDER=groq` with `GROQ_API_KEY=...` and e.g. `LLM_MODEL=llama-3.1-8b-instant`
+  - `EMBEDDING_PROVIDER=huggingface` with e.g. `EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2`
+  - for `all-MiniLM-L6-v2`, set `VECTOR_DIMENSIONS=384`
 
 ## API Examples
 

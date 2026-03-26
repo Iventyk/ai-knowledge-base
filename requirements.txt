@@ -6,6 +6,7 @@ httpx==0.28.1
 langchain==0.3.27
 langchain-community==0.3.31
 langchain-openai==0.3.29
+langchain-groq==0.3.8
 orjson==3.10.18
 pgvector==0.4.1
 psycopg[binary]==3.2.10
@@ -14,6 +15,7 @@ pydantic-settings==2.10.1
 pypdf==5.9.0
 python-dotenv==1.1.1
 python-multipart==0.0.20
+sentence-transformers==5.1.0
 redis==6.4.0
 sqlalchemy==2.0.43
 structlog==25.4.0

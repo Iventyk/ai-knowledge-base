@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     redis_db: int = Field(default=0, alias="REDIS_DB")
 
     openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
+    groq_api_key: str = Field(default="", alias="GROQ_API_KEY")
     embedding_provider: str = Field(default="fake", alias="EMBEDDING_PROVIDER")
     llm_provider: str = Field(default="fake", alias="LLM_PROVIDER")
     embedding_model: str = Field(
