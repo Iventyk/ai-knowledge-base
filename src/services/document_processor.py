@@ -1,4 +1,5 @@
 from __future__ import annotations
+import re
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -6,6 +7,7 @@ from uuid import UUID
 import structlog
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.config import settings
@@ -44,7 +46,7 @@ class DocumentProcessorService:
             vectors = self.embedding_model.embed_documents(
                 [chunk.page_content for chunk in chunks]
             )
-            self._validate_vector_dimensions(vectors)
+            await self._validate_vector_dimensions(vectors)
 
             rows = [
                 ChunkEmbedding(
@@ -76,6 +78,15 @@ class DocumentProcessorService:
             )
 
         except Exception as exc:
+            await self.session.rollback()
+            document = await self.documents.get(document_id)
+            if document is None:
+                logger.exception(
+                    "document_processing_failed_document_missing_after_rollback",
+                    document_id=str(document_id),
+                    error=str(exc),
+                )
+                raise
             document.status = DocumentStatus.FAILED.value
             document.error_message = str(exc)
             await self.session.commit()
@@ -86,7 +97,9 @@ class DocumentProcessorService:
             )
             raise
 
-    def _validate_vector_dimensions(self, vectors: list[list[float]]) -> None:
+    async def _validate_vector_dimensions(
+            self, vectors: list[list[float]]
+    ) -> None:
         if not vectors:
             return
 
@@ -105,6 +118,39 @@ class DocumentProcessorService:
                 f"model_output={actual_dimensions}. "
                 "Update VECTOR_DIMENSIONS and reprocess documents."
             )
+
+        database_dimensions = await self._get_database_vector_dimensions()
+        if (
+                database_dimensions is not None
+                and database_dimensions != actual_dimensions
+        ):
+            raise ValueError(
+                "Embedding dimensions mismatch with database schema: "
+                f"database_vector_dimensions={database_dimensions}, "
+                f"model_output={actual_dimensions}. "
+                "Run a migration (or recreate schema) so the "
+                "chunk_embeddings.embedding column matches the "
+                "configured embedding model dimensions."
+            )
+
+    async def _get_database_vector_dimensions(self) -> int | None:
+        query = text(
+            "SELECT format_type(a.atttypid, a.atttypmod) "
+            "FROM pg_attribute AS a "
+            "WHERE a.attrelid = 'chunk_embeddings'::regclass "
+            "AND a.attname = 'embedding' "
+            "AND NOT a.attisdropped"
+        )
+        result = await self.session.execute(query)
+        type_repr = result.scalar_one_or_none()
+        if not isinstance(type_repr, str):
+            return None
+
+        match = re.fullmatch(r"vector\((\d+)\)", type_repr)
+        if match is None:
+            return None
+
+        return int(match.group(1))
 
     async def generate_summary(self, document_id: UUID) -> None:
         document = await self.documents.get(document_id)
