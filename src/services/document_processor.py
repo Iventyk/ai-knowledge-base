@@ -82,7 +82,8 @@ class DocumentProcessorService:
             document = await self.documents.get(document_id)
             if document is None:
                 logger.exception(
-                    "document_processing_failed_document_missing_after_rollback",
+                    "document_processing_failed_"
+                    "document_missing_after_rollback",
                     document_id=str(document_id),
                     error=str(exc),
                 )
@@ -98,7 +99,7 @@ class DocumentProcessorService:
             raise
 
     async def _validate_vector_dimensions(
-            self, vectors: list[list[float]]
+        self, vectors: list[list[float]]
     ) -> None:
         if not vectors:
             return
@@ -121,8 +122,8 @@ class DocumentProcessorService:
 
         database_dimensions = await self._get_database_vector_dimensions()
         if (
-                database_dimensions is not None
-                and database_dimensions != actual_dimensions
+            database_dimensions is not None
+            and database_dimensions != actual_dimensions
         ):
             raise ValueError(
                 "Embedding dimensions mismatch with database schema: "
