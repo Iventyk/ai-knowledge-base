@@ -1,4 +1,5 @@
 from __future__ import annotations
+import asyncio
 import structlog
 from fastapi import HTTPException, status
 from langchain_core.documents import Document as LangChainDocument
@@ -62,7 +63,9 @@ class QuestionAnswerService:
                 },
             )
 
-        question_embedding = self.embedding_model.embed_query(payload.question)
+        question_embedding = await asyncio.to_thread(
+            self.embedding_model.embed_query, payload.question
+        )
         question_embedding_dimensions = len(question_embedding)
         chunks = await self.embedding_repository.similarity_search(
             embedding=question_embedding,
@@ -84,7 +87,7 @@ class QuestionAnswerService:
             LangChainDocument(
                 page_content=chunk.content,
                 metadata={
-                    "document": chunk.source_document,
+                    "document": chunk.document.name,
                     "chunk_id": chunk.chunk_id,
                 },
             )
@@ -100,7 +103,8 @@ class QuestionAnswerService:
         prompt_message = self.prompt.invoke(
             {"question": payload.question, "context": context}
         )
-        raw_answer = self.llm.invoke(prompt_message).content
+        llm_response = await asyncio.to_thread(self.llm.invoke, prompt_message)
+        raw_answer = llm_response.content
         answer = (
             raw_answer
             if isinstance(raw_answer, str)
@@ -119,7 +123,8 @@ class QuestionAnswerService:
             answer=answer,
             sources=[
                 AskSource(
-                    document=chunk.source_document, chunk_id=chunk.chunk_id
+                    document=chunk.document.name,
+                    chunk_id=chunk.chunk_id,
                 )
                 for chunk in chunks
             ],

@@ -2,6 +2,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from src.schemas.document import ErrorResponse as AskErrorResponse
+
 
 class AskRequest(BaseModel):
     question: str = Field(min_length=3)
@@ -16,7 +18,3 @@ class AskSource(BaseModel):
 class AskResponse(BaseModel):
     answer: str
     sources: list[AskSource]
-
-
-class AskErrorResponse(BaseModel):
-    detail: str

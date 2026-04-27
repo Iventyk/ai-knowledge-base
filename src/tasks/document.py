@@ -1,4 +1,5 @@
 import asyncio
+import threading
 from uuid import UUID
 from collections.abc import Coroutine
 from typing import Any
@@ -12,13 +13,15 @@ from src.tasks.celery import celery_app
 
 logger = structlog.get_logger(__name__)
 _worker_loop: asyncio.AbstractEventLoop | None = None
+_worker_loop_lock = threading.Lock()
 
 
 def _get_worker_loop() -> asyncio.AbstractEventLoop:
     global _worker_loop
-    if _worker_loop is None or _worker_loop.is_closed():
-        _worker_loop = asyncio.new_event_loop()
-    return _worker_loop
+    with _worker_loop_lock:
+        if _worker_loop is None or _worker_loop.is_closed():
+            _worker_loop = asyncio.new_event_loop()
+        return _worker_loop
 
 
 def _run_in_worker_loop(coro: Coroutine[Any, Any, None]) -> None:
@@ -53,6 +56,7 @@ def generate_summary_task(document_id: str) -> None:
 @worker_process_shutdown.connect
 def _close_worker_loop(**_: object) -> None:
     global _worker_loop
-    if _worker_loop is not None and not _worker_loop.is_closed():
-        _worker_loop.close()
-        _worker_loop = None
+    with _worker_loop_lock:
+        if _worker_loop is not None and not _worker_loop.is_closed():
+            _worker_loop.close()
+            _worker_loop = None

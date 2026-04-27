@@ -1,4 +1,5 @@
 from __future__ import annotations
+import asyncio
 import re
 from pathlib import Path
 from typing import Any
@@ -43,8 +44,9 @@ class DocumentProcessorService:
 
         try:
             chunks = await self._load_and_split(document.file_path)
-            vectors = self.embedding_model.embed_documents(
-                [chunk.page_content for chunk in chunks]
+            vectors = await asyncio.to_thread(
+                self.embedding_model.embed_documents,
+                [chunk.page_content for chunk in chunks],
             )
             await self._validate_vector_dimensions(vectors)
 
@@ -54,7 +56,6 @@ class DocumentProcessorService:
                     chunk_id=index,
                     content=chunk.page_content,
                     embedding=vector,
-                    source_document=document.name,
                 )
                 for index, (chunk, vector) in enumerate(
                     zip(chunks, vectors, strict=True), start=1
@@ -164,13 +165,13 @@ class DocumentProcessorService:
 
     async def _load_and_split(self, file_path: str):
         loader = self._build_loader(file_path)
-        docs = loader.load()
+        docs = await asyncio.to_thread(loader.load)
         splitter = RecursiveCharacterTextSplitter(
             chunk_size=settings.chunk_size,
             chunk_overlap=settings.chunk_overlap,
         )
 
-        return splitter.split_documents(docs)
+        return await asyncio.to_thread(splitter.split_documents, docs)
 
     def _build_loader(self, file_path: str) -> Any:
         suffix = Path(file_path).suffix.lower()
@@ -180,9 +181,10 @@ class DocumentProcessorService:
 
     async def _generate_summary(self, chunks) -> str:
         context = "\n\n".join(chunk.page_content for chunk in chunks[:3])
-        response = self.llm.invoke(
+        response = await asyncio.to_thread(
+            self.llm.invoke,
             "Summarize the document briefly for cataloging purposes.\n\n"
-            f"{context}"
+            f"{context}",
         )
         content = response.content
         return (
