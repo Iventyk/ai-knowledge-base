@@ -8,6 +8,12 @@ from src.services.qa import QuestionAnswerService
 router = APIRouter(tags=["ask"])
 
 
+def get_question_answer_service(
+    db: AsyncSession = Depends(get_db),
+) -> QuestionAnswerService:
+    return QuestionAnswerService(db)
+
+
 @router.post(
     "/ask",
     response_model=AskResponse,
@@ -18,6 +24,6 @@ router = APIRouter(tags=["ask"])
 )
 async def ask_question(
     payload: AskRequest,
-    db: AsyncSession = Depends(get_db),
+    service: QuestionAnswerService = Depends(get_question_answer_service),
 ) -> AskResponse:
-    return await QuestionAnswerService(db).ask(payload)
+    return await service.ask(payload)

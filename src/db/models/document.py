@@ -1,11 +1,17 @@
+from __future__ import annotations
+
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.db.base import Base
+
+if TYPE_CHECKING:
+    from src.db.models.chunk_embedding import ChunkEmbedding
 
 
 class Document(Base):
@@ -26,4 +32,10 @@ class Document(Base):
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    chunk_embeddings: Mapped[list["ChunkEmbedding"]] = relationship(
+        "ChunkEmbedding",
+        back_populates="document",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
     )

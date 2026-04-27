@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import DateTime, ForeignKey, Integer, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -27,9 +27,12 @@ class ChunkEmbedding(Base):
     embedding: Mapped[list[float]] = mapped_column(
         Vector(settings.vector_dimensions), nullable=False
     )
-    source_document: Mapped[str] = mapped_column(String(255), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    document = relationship("Document", lazy="joined")
+    document = relationship(
+        "Document",
+        back_populates="chunk_embeddings",
+        lazy="joined",
+    )

@@ -17,7 +17,7 @@ class DocumentCreateResponse(BaseModel):
 
 
 class DocumentListItem(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
     id: UUID
     name: str
@@ -26,5 +26,5 @@ class DocumentListItem(BaseModel):
     created_at: datetime
 
 
-class DocumentErrorResponse(BaseModel):
+class ErrorResponse(BaseModel):
     detail: str

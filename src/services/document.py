@@ -1,4 +1,5 @@
 from uuid import UUID
+from pathlib import Path
 
 import structlog
 from fastapi import HTTPException, UploadFile, status
@@ -7,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.repositories.chunk_embedding import ChunkEmbeddingRepository
 from src.repositories.document import DocumentRepository
 from src.schemas.document import DocumentListItem
+from src.schemas.document import DocumentStatus
 from src.services.storage import FileStorageService
 from src.tasks.document import process_document_task
 
@@ -28,11 +30,7 @@ class DocumentService:
                 detail="File must have a filename",
             )
 
-        suffix = (
-            "." + file.filename.rsplit(".", maxsplit=1)[-1].lower()
-            if "." in file.filename
-            else ""
-        )
+        suffix = Path(file.filename).suffix.lower()
         if suffix not in ALLOWED_SUFFIXES:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -48,7 +46,21 @@ class DocumentService:
             document_id=str(document.id),
             filename=document.name,
         )
-        process_document_task.delay(str(document.id))
+        try:
+            process_document_task.delay(str(document.id))
+        except Exception as exc:
+            document.status = DocumentStatus.FAILED.value
+            document.error_message = "Unable to enqueue document processing"
+            await self.session.commit()
+            logger.exception(
+                "document_processing_enqueue_failed",
+                document_id=str(document.id),
+                error=str(exc),
+            )
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Unable to enqueue document processing task",
+            ) from exc
         return document
 
     async def list_documents(self) -> list[DocumentListItem]:
@@ -68,7 +80,7 @@ class DocumentService:
         await self.embeddings.delete_by_document_id(document.id)
         await self.repository.delete(document)
         await self.session.commit()
-        self.storage.remove(document.file_path)
+        await self.storage.remove(document.file_path)
         logger.info(
             "document_deleted",
             document_id=str(document.id),

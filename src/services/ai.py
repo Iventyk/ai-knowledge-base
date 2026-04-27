@@ -32,6 +32,16 @@ class EchoChatModel(BaseChatModel):
             generations=[ChatGeneration(message=AIMessage(content=response))]
         )
 
+    async def _agenerate(
+        self, messages, stop=None, run_manager=None, **kwargs
+    ):
+        return self._generate(
+            messages=messages,
+            stop=stop,
+            run_manager=run_manager,
+            **kwargs,
+        )
+
 
 def get_embeddings() -> Embeddings:
     if settings.embedding_provider == "openai" and settings.openai_api_key:

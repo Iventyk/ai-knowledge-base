@@ -6,25 +6,31 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.session import get_db
 from src.schemas.document import (
     DocumentCreateResponse,
-    DocumentErrorResponse,
     DocumentListItem,
+    ErrorResponse,
 )
 from src.services.document import DocumentService
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
 
+def get_document_service(
+    db: AsyncSession = Depends(get_db),
+) -> DocumentService:
+    return DocumentService(db)
+
+
 @router.post(
     "",
     response_model=DocumentCreateResponse,
     status_code=status.HTTP_202_ACCEPTED,
-    responses={status.HTTP_400_BAD_REQUEST: {"model": DocumentErrorResponse}},
+    responses={status.HTTP_400_BAD_REQUEST: {"model": ErrorResponse}},
 )
 async def upload_document(
     file: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db),
+    service: DocumentService = Depends(get_document_service),
 ) -> DocumentCreateResponse:
-    document = await DocumentService(db).upload_document(file)
+    document = await service.upload_document(file)
     return DocumentCreateResponse(
         document_id=document.id, status=document.status
     )
@@ -32,19 +38,19 @@ async def upload_document(
 
 @router.get("", response_model=list[DocumentListItem])
 async def list_documents(
-    db: AsyncSession = Depends(get_db),
+    service: DocumentService = Depends(get_document_service),
 ) -> list[DocumentListItem]:
-    return await DocumentService(db).list_documents()
+    return await service.list_documents()
 
 
 @router.delete(
     "/{document_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    responses={status.HTTP_404_NOT_FOUND: {"model": DocumentErrorResponse}},
+    responses={status.HTTP_404_NOT_FOUND: {"model": ErrorResponse}},
 )
 async def delete_document(
     document_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    service: DocumentService = Depends(get_document_service),
 ) -> Response:
-    await DocumentService(db).delete_document(document_id)
+    await service.delete_document(document_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -1,3 +1,4 @@
+import asyncio
 from pathlib import Path
 from uuid import uuid4
 
@@ -11,12 +12,20 @@ class FileStorageService:
         safe_name = file.filename or f"document-{uuid4()}.txt"
         file_id = uuid4()
         destination = settings.upload_dir / f"{file_id}_{safe_name}"
-        content = await file.read()
-        destination.write_bytes(content)
+        await asyncio.to_thread(
+            destination.parent.mkdir, parents=True, exist_ok=True
+        )
+        await asyncio.to_thread(destination.write_bytes, b"")
+        with destination.open("ab") as stream:
+            while True:
+                chunk = await file.read(1024 * 1024)
+                if not chunk:
+                    break
+                await asyncio.to_thread(stream.write, chunk)
         await file.close()
         return safe_name, str(destination)
 
-    def remove(self, file_path: str) -> None:
+    async def remove(self, file_path: str) -> None:
         path = Path(file_path)
         if path.exists():
-            path.unlink()
+            await asyncio.to_thread(path.unlink)
