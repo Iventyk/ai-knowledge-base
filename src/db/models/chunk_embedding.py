@@ -23,6 +23,7 @@ class ChunkEmbedding(Base):
         index=True,
     )
     chunk_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    source_document: Mapped[str] = mapped_column(Text, nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     embedding: Mapped[list[float]] = mapped_column(
         Vector(settings.vector_dimensions), nullable=False

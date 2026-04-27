@@ -54,6 +54,7 @@ class DocumentProcessorService:
                 ChunkEmbedding(
                     document_id=document.id,
                     chunk_id=index,
+                    source_document=document.name,
                     content=chunk.page_content,
                     embedding=vector,
                 )
